@@ -1,0 +1,7 @@
+fastapi==0.114.*
+fastui==0.7.*
+pydantic==2.9.*
+uvicorn==0.30.*
+beautifulsoup4==4.12.*
+requests
+html2text==2024.2.*

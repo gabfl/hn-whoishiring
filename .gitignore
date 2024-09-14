@@ -1,0 +1,13 @@
+# Mac OS hidden files
+.DS_Store
+
+venv/
+
+# Python
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# SQLite db
+data/*.db
