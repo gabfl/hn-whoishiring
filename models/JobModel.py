@@ -1,9 +1,10 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional
 from helper import db_connect
+from . import StatusModel
 
 
 class Job(BaseModel):
@@ -40,7 +41,8 @@ def update(job_id, status):
     cursor = conn.cursor()
 
     # Check for valid statuses
-    if status not in ['new', 'applied', 'discarded', 'interviewed']:
+    valid_statuses = [status.value for status in StatusModel.get_all()]
+    if status not in valid_statuses:
         # raise ValueError('Invalid status')
         return False
 
@@ -91,4 +93,12 @@ def get_all(status=None, search=None):
 
     jobs = cursor.fetchall()
     conn.close()
+
+    if not jobs:
+        # @todo: better handling of no jobs found
+        return [
+            Job(id=0, job_text='No jobs found',
+                inserted_at=datetime.now(), applied_at=None, status='new')
+        ]
+
     return [Job(id=job[0], job_text=job[1], inserted_at=job[2], applied_at=job[3], status=job[4]) for job in jobs]

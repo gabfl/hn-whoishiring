@@ -1,21 +1,23 @@
-from fastapi import FastAPI, HTTPException
+from collections import defaultdict
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastui import FastUI, AnyComponent, prebuilt_html, components as c
 from fastui.components.display import DisplayMode, DisplayLookup
 from fastui.events import GoToEvent, BackEvent, PageEvent
+from fastui.forms import SelectSearchResponse
+from pydantic import BaseModel, Field
 import uvicorn
 from helper import db_init
-import JobModel
+from models import JobModel, StatusModel
 from typing import List
 
 app = FastAPI()
 db_init()
 
 
-# class FilterForm(BaseModel):
-#     status: str = Field(json_schema_extra={
-#                         'search_url': '/api/forms/search', 'placeholder': 'Filter by status...'})
-
+class FilterForm(BaseModel):
+    status: str = Field(json_schema_extra={
+        'search_url': '/api/search/status', 'placeholder': 'Filter by Status...'})
 
 # class SearchForm(BaseModel):
 #     # Send this as "search" query parameter to the backend
@@ -23,28 +25,42 @@ db_init()
 #                         'search_url': '/api/forms/search', 'placeholder': 'Search...', 'minLength': 3})
 
 
+@app.get('/api/search/status', response_model=SelectSearchResponse)
+async def status_search_view(request: Request, q: str) -> SelectSearchResponse:
+    """ Statuses dropdown search view """
+
+    options = [{'value': s.value, 'label': s.label}
+               for s in StatusModel.get_all()]
+    return SelectSearchResponse(options=options)
+
+
 @app.get("/api/", response_model=FastUI, response_model_exclude_none=True)
-def users_table(status: str | None = None, search: str | None = None) -> List[AnyComponent]:
+def users_table(status: str | None = 'new', search: str | None = None) -> List[AnyComponent]:
     """
     Show a table of all jobs, the frontend will fetch this
     when a user visits `/` to fetch components to render.
     """
-    jobs = JobModel.get_all(status=status, search=search)
+
+    # Initial form values
     filter_form_initial = {}
     if status:
         filter_form_initial['status'] = {'value': status, 'label': status}
+
+    # Fetch jobs
+    jobs = JobModel.get_all(status=status, search=search)
+
     return [
         c.Page(  # Page provides a basic container for components
             components=[
                 c.Heading(text='Jobs', level=2),  # renders `<h2>Jobs</h2>`
-                # c.ModelForm(
-                #     model=FilterForm,
-                #     submit_url='.',
-                #     initial=filter_form_initial,
-                #     method='GOTO',
-                #     submit_on_change=True,
-                #     display_mode='inline',
-                # ),
+                c.ModelForm(
+                    model=FilterForm,
+                    submit_url='.',
+                    initial=filter_form_initial,
+                    method='GOTO',
+                    submit_on_change=True,
+                    display_mode='inline',
+                ),
                 # c.ModelForm(
                 #     model=SearchForm,
                 #     submit_url='.',
@@ -90,33 +106,19 @@ def job_profile(job_id: int) -> list[AnyComponent]:
     # Job_text is markdown, render it as markdown
     job.job_text = c.Markdown(text=job.job_text)
 
+    # Links
+    links = []
+    for status in StatusModel.get_all():
+        links.append(
+            c.Link(
+                components=[c.Text(text=status.label)],
+                on_click=GoToEvent(url=f'/job/{job_id}/update/{status.value}'),
+                active=job.status == status.value,
+            )
+        )
+
     job.status = c.LinkList(
-        links=[
-            c.Link(
-                components=[c.Text(text='New')],
-                on_click=GoToEvent(
-                    url=f'/job/{job_id}/update/new'),
-                active=job.status == 'new',
-            ),
-            c.Link(
-                components=[c.Text(text='Applied')],
-                on_click=GoToEvent(
-                    url=f'/job/{job_id}/update/applied'),
-                active=job.status == 'applied',
-            ),
-            c.Link(
-                components=[c.Text(text='Discard')],
-                on_click=GoToEvent(
-                    url=f'/job/{job_id}/update/discarded'),
-                active=job.status == 'discarded',
-            ),
-            c.Link(
-                components=[c.Text(text='In interview')],
-                on_click=GoToEvent(
-                    url=f'/job/{job_id}/update/interviewed'),
-                active=job.status == 'interviewed',
-            ),
-        ],
+        links=links,
         mode='tabs',
     )
 
@@ -124,7 +126,8 @@ def job_profile(job_id: int) -> list[AnyComponent]:
         c.Page(
             components=[
                 c.Heading(text="Job details", level=2),
-                c.Link(components=[c.Text(text='Back')], on_click=BackEvent()),
+                c.Link(components=[c.Text(text='Back to listings')],
+                       on_click=GoToEvent(url='/')),
                 c.Details(data=job),
             ]
         ),
