@@ -1,7 +1,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from typing import Optional
 from helper import db_connect, resolve_email
 from . import StatusModel
@@ -11,6 +11,7 @@ class Job(BaseModel):
     id: int
     job_text: str
     inserted_at: datetime
+    updated_at: Optional[datetime]
     applied_at: Optional[datetime]
     status: str
 
@@ -23,14 +24,14 @@ def get(job_id):
     cursor = conn.cursor()
 
     cursor.execute('''
-    SELECT id, job_text, inserted_at, applied_at, status
+    SELECT id, job_text, inserted_at, updated_at, applied_at, status
     FROM jobs
     WHERE id = ?
     ''', (job_id,))
 
-    job = cursor.fetchone()
+    row = cursor.fetchone()
     conn.close()
-    return Job(id=job[0], job_text=resolve_email(job[1]), inserted_at=job[2], applied_at=job[3], status=job[4])
+    return format_job(row)
 
 
 def update(job_id, status):
@@ -46,19 +47,16 @@ def update(job_id, status):
         # raise ValueError('Invalid status')
         return False
 
-    query_params = [status, job_id]
-
     # If the status is 'applied', update the 'applied_at' field
     query_part = ''
     if status == 'applied':
-        query_part = ', applied_at = ?'
-        query_params.insert(1, datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        query_part = ", applied_at = datetime('now')"
 
     cursor.execute(f'''
     UPDATE jobs
-    SET status = ? {query_part}
+    SET status = ?, updated_at = datetime('now') {query_part}
     WHERE id = ?
-    ''', query_params)
+    ''', (status, job_id))
 
     conn.commit()
     conn.close()
@@ -85,21 +83,43 @@ def get_all(status=None, search=None):
         query_params.append(f'%{search}%')
 
     query = f"""
-    SELECT id, job_text, inserted_at, applied_at, status
+    SELECT id, job_text, inserted_at, updated_at, applied_at, status
     FROM jobs
     WHERE 1=1
     {query_part}
     """
     cursor.execute(query, query_params)
 
-    jobs = cursor.fetchall()
+    rows = cursor.fetchall()
     conn.close()
 
-    if not jobs:
+    if not rows:
         # @todo: better handling of no jobs found
         return [
             Job(id=0, job_text='No jobs found',
                 inserted_at=datetime.now(), applied_at=None, status='new')
         ]
 
-    return [Job(id=job[0], job_text=resolve_email(job[1]), inserted_at=job[2], applied_at=job[3], status=job[4]) for job in jobs]
+    jobs = []
+    for row in rows:
+        jobs.append(format_job(row))
+
+    return jobs
+
+
+def format_job(job):
+    """
+        Format a job
+    """
+
+    # Resolve emails
+    job_text = resolve_email(job['job_text'])
+
+    return Job(
+        id=job['id'],
+        job_text=job_text,
+        inserted_at=job['inserted_at'],
+        updated_at=job['updated_at'],
+        applied_at=job['applied_at'],
+        status=job['status']
+    )

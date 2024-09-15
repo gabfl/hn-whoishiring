@@ -2,7 +2,6 @@ import requests
 from bs4 import BeautifulSoup
 import argparse
 import hashlib
-from datetime import datetime
 
 from helper import db_connect, db_init, backup_db_file, is_hacker_news_url, html_to_markdown
 
@@ -65,7 +64,7 @@ def main(url):
         job_exists = cursor.fetchone()[0] > 0
         if not job_exists:
             count += 1
-            inserted_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            inserted_at = "datetime('now')"
 
             cursor.execute(
                 'INSERT INTO jobs (job_text, job_hash, inserted_at, status) VALUES (?, ?, ?, ?)', (job, job_hash, inserted_at, 'new'))

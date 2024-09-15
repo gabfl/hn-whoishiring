@@ -42,7 +42,10 @@ def db_connect():
         Connect to the SQLite database
     """
 
-    return sqlite3.connect(get_db_path())
+    conn = sqlite3.connect(get_db_path())
+    conn.row_factory = sqlite3.Row
+
+    return conn
 
 
 def db_init():
@@ -68,6 +71,7 @@ def db_init():
             job_text TEXT NOT NULL,
             job_hash TEXT NOT NULL,
             inserted_at TIMESTAMP NOT NULL,
+            updated_at TIMESTAMP,
             applied_at TIMESTAMP,
             status TEXT
         )
@@ -105,19 +109,37 @@ def resolve_email(text):
         Deobfuscate an obfuscated email address
     """
 
-    # Regular expression to match the pattern for obfuscated email
-    pattern = r'([a-zA-Z0-9_-]+( dot [a-zA-Z0-9_-]+)? at [a-zA-Z0-9_-]+ dot [a-zA-Z0-9_-]+)'
+    # Regular expression to match the pattern for obfuscated email addresses like "name dot domain at domain"
+    patterns = [
+        r'([a-zA-Z0-9_-]+( dot [a-zA-Z0-9_-]+)? at [a-zA-Z0-9_-]+ dot [a-zA-Z0-9_-]+)',
+        # similar but [at] instead of " at " and [dot] instead of " dot "
+        r'([a-zA-Z0-9_-]+( ?\[dot\] ?[a-zA-Z0-9_-]+)? ?\[at\] ?[a-zA-Z0-9_-]+ ?\[dot\] ?[a-zA-Z0-9_-]+)',
+        # Same but just [at] is used
+        r'([a-zA-Z0-9_.-]+\s?\[at\]\s?[a-zA-Z0-9_.-]+)',
+    ]
 
-    # Find the line containing the email using regex
-    match = re.search(pattern, text)
+    for pattern in patterns:
+        # Find the line containing the email using regex
+        match = re.search(pattern, text)
 
-    if match:
-        # Extract the matched text
-        obfuscated_email = match.group(0)
-        # Replace " dot " with "." and " at " with "@"
-        email = obfuscated_email.replace(" dot ", ".").replace(" at ", "@")
+        if match:
+            # Extract the matched text
+            obfuscated_email = match.group(0)
+            # Replace " dot " with "." and " at " with "@"
+            email = obfuscated_email.replace(" dot ", ".").replace(" at ", "@")
+            email = email.replace(" [dot] ", ".").replace(" [at] ", "@")
+            email = email.replace("[dot]", ".").replace("[at]", "@")
 
-        # Add lime break and append email
-        return text + "\n🪄 *Deobfuscated email:* " + email
+            # Add lime break and append email
+            return text + "\n🪄 *Deobfuscated email:* " + email
 
     return text
+
+
+def format_dt(date):
+    """ Format datetime """
+
+    if not date:
+        return None
+
+    return date.strftime('%m/%d/%Y %I:%M:%S %p')

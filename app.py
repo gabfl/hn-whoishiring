@@ -9,7 +9,7 @@ from fastui.forms import SelectSearchResponse
 from pydantic import BaseModel, Field
 import uvicorn
 
-from helper import db_init, get_from_cache, set_to_cache
+from helper import db_init, get_from_cache, set_to_cache, format_dt
 from models import JobModel, StatusModel
 
 app = FastAPI()
@@ -102,8 +102,7 @@ def users_table(status: str | None = None, search: str | None = None, clear_cach
                         DisplayLookup(field='job_text',
                                       mode=DisplayMode.markdown),
                         DisplayLookup(field='status'),
-                        DisplayLookup(field='inserted_at',
-                                      mode=DisplayMode.date),
+                        DisplayLookup(field='inserted_at'),
                     ],
                 ),
             ]
@@ -124,11 +123,6 @@ def job_profile(job_id: int) -> list[AnyComponent]:
     except StopIteration:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    # Format date
-    job.inserted_at = job.inserted_at.strftime('%m/%d/%Y %H:%M:%S')
-    if job.applied_at:
-        job.applied_at = job.applied_at.strftime('%m/%d/%Y %H:%M:%S')
-
     # Job_text is markdown, render it as markdown
     job.job_text = c.Markdown(text=job.job_text)
 
@@ -148,12 +142,18 @@ def job_profile(job_id: int) -> list[AnyComponent]:
         mode='tabs',
     )
 
+    job.inserted_at = format_dt(job.inserted_at)
+    job.updated_at = format_dt(job.updated_at)
+    job.applied_at = format_dt(job.applied_at)
+
     return [
         c.Page(
             components=[
                 c.Heading(text="Job details", level=2),
-                c.Link(components=[c.Text(text='Back to listings')],
-                       on_click=GoToEvent(url='/')),
+                c.Link(
+                    components=[c.Text(text='Back to listings')],
+                    on_click=GoToEvent(url='/')
+                ),
                 c.Details(data=job),
             ]
         ),
