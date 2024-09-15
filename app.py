@@ -124,34 +124,40 @@ def job_profile(job_id: int) -> list[AnyComponent]:
         raise HTTPException(status_code=404, detail="Job not found")
 
     # Links
-    links = []
-    for status in StatusModel.get_all():
-        links.append(
-            c.Link(
-                components=[c.Text(text=status.label)],
-                on_click=GoToEvent(url=f'/job/{job_id}/update/{status.value}'),
-                active=job.status == status.value,
+    if job_id > 0:
+        links = []
+        for status in StatusModel.get_all():
+            links.append(
+                c.Link(
+                    components=[c.Text(text=status.label)],
+                    on_click=GoToEvent(
+                        url=f'/job/{job_id}/update/{status.value}'),
+                    active=job.status == status.value,
+                )
             )
-        )
 
-    job.status = c.LinkList(
-        links=links,
-        mode='tabs',
-    )
+        job.status = c.LinkList(
+            links=links,
+            mode='tabs',
+        )
 
     # Format data
     job.job_text = c.Markdown(text=job.job_text)
     job.inserted_at = format_dt(job.inserted_at)
     job.updated_at = format_dt(job.updated_at)
     job.applied_at = format_dt(job.applied_at)
-    job.hn_user = c.Link(
-        components=[c.Text(text=job.hn_user)],
-        on_click=GoToEvent(url=get_link_user(job.hn_user), target='_blank'),
-    )
-    job.hn_id = c.Link(
-        components=[c.Text(text=str(job.hn_id))],
-        on_click=GoToEvent(url=get_link_comment(job.hn_id), target='_blank'),
-    )
+    if job.hn_user:
+        job.hn_user = c.Link(
+            components=[c.Text(text=job.hn_user)],
+            on_click=GoToEvent(url=get_link_user(
+                job.hn_user), target='_blank'),
+        )
+    if job.hn_id:
+        job.hn_id = c.Link(
+            components=[c.Text(text=str(job.hn_id))],
+            on_click=GoToEvent(url=get_link_comment(
+                job.hn_id), target='_blank'),
+        )
 
     return [
         c.Page(

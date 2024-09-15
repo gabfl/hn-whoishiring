@@ -33,7 +33,7 @@ def get(job_id):
 
     row = cursor.fetchone()
     conn.close()
-    return format_job(row)
+    return format_job(dict(row) or {})
 
 
 def update(job_id, status):
@@ -98,13 +98,15 @@ def get_all(status=None, search=None):
     if not rows:
         # @todo: better handling of no jobs found
         return [
-            Job(id=0, job_text='No jobs found',
-                inserted_at=datetime.now(), applied_at=None, status='new')
+            format_job({
+                'id': 0,
+                'job_text': 'No results.',
+            })
         ]
 
     jobs = []
     for row in rows:
-        jobs.append(format_job(row))
+        jobs.append(format_job(dict(row)))
 
     return jobs
 
@@ -115,18 +117,19 @@ def format_job(job):
     """
 
     # Resolve emails
-    job_text = resolve_email(job['job_text'])
+    job_text = resolve_email(job.get('job_text', ''))
 
     # Convert HTML to Markdown
     job_text = html_to_markdown(job_text)
 
     return Job(
-        id=job['id'],
-        hn_id=job['hn_id'],
-        hn_user=job['hn_user'],
+        id=job.get('id', 0),
+        hn_id=job.get('hn_id'),
+        hn_user=job.get('hn_user'),
         job_text=job_text,
-        inserted_at=job['inserted_at'],
-        updated_at=job['updated_at'],
-        applied_at=job['applied_at'],
-        status=job['status']
+        inserted_at=job.get(
+            'inserted_at', datetime.now().replace(microsecond=0)),
+        updated_at=job.get('updated_at'),
+        applied_at=job.get('applied_at'),
+        status=job.get('status', 'n/a'),
     )
