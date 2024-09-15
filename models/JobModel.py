@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from typing import Optional
-from helper import db_connect
+from helper import db_connect, resolve_email
 from . import StatusModel
 
 
@@ -30,7 +30,7 @@ def get(job_id):
 
     job = cursor.fetchone()
     conn.close()
-    return Job(id=job[0], job_text=job[1], inserted_at=job[2], applied_at=job[3], status=job[4])
+    return Job(id=job[0], job_text=resolve_email(job[1]), inserted_at=job[2], applied_at=job[3], status=job[4])
 
 
 def update(job_id, status):
@@ -102,4 +102,4 @@ def get_all(status=None, search=None):
                 inserted_at=datetime.now(), applied_at=None, status='new')
         ]
 
-    return [Job(id=job[0], job_text=job[1], inserted_at=job[2], applied_at=job[3], status=job[4]) for job in jobs]
+    return [Job(id=job[0], job_text=resolve_email(job[1]), inserted_at=job[2], applied_at=job[3], status=job[4]) for job in jobs]

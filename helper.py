@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 
 import sqlite3
@@ -97,3 +98,26 @@ def get_from_cache(key):
 def set_to_cache(key, value):
     """ Set filters in cache """
     cache.set(key, value)
+
+
+def resolve_email(text):
+    """
+        Deobfuscate an obfuscated email address
+    """
+
+    # Regular expression to match the pattern for obfuscated email
+    pattern = r'([a-zA-Z0-9_-]+( dot [a-zA-Z0-9_-]+)? at [a-zA-Z0-9_-]+ dot [a-zA-Z0-9_-]+)'
+
+    # Find the line containing the email using regex
+    match = re.search(pattern, text)
+
+    if match:
+        # Extract the matched text
+        obfuscated_email = match.group(0)
+        # Replace " dot " with "." and " at " with "@"
+        email = obfuscated_email.replace(" dot ", ".").replace(" at ", "@")
+
+        # Add lime break and append email
+        return text + "\n🪄 *Deobfuscated email:* " + email
+
+    return text

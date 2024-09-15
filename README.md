@@ -12,6 +12,7 @@ This application allows you to scrape, store, and interactively explore job post
  - **Storage:** Store job postings in a local SQLite database.
  - **Search & Filter:** Search and filter job postings through a simple web interface.
  - **FastUI Integration:** Provides an interactive UI for managing and exploring the job listings.
+ - **Email Extraction:** Automatically extract obfuscated email addresses from job postings and convert them to standard email format.
 
 ## Prerequisites
 
