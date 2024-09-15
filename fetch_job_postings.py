@@ -22,7 +22,30 @@ def load_file(file):
         return f.read()
 
 
+def get_all_comments(soup):
+    """ Get all comments from the page """
+
+    # Find all comments (jobs) in the page
+    items = soup.find_all('tr', class_='athing comtr')
+
+    return items
+
+
+def is_reply(item):
+    """ Check if the item is a reply """
+
+    # Check if there is a td with attribute "indent" in the item and the value is greater than 0
+    # Example:  <td class='ind' indent='3'>
+    res = item.find(
+        lambda tag: tag.name == 'td' and tag.get('indent') and int(tag['indent']) > 0)
+
+    if res:
+        return True
+
+
 def parse_from_comment(item):
+    """ Parse the comment and extract the job details """
+
     # Get comment from commtext div
     comment = str(item.find('div', class_='commtext'))
 
@@ -75,18 +98,14 @@ def main(url):
     # Parse the page content using BeautifulSoup
     soup = BeautifulSoup(source, 'html.parser')
 
-    # Find all comments (jobs) in the page
-    items = soup.find_all('td', class_='default')
-
     # Insert job postings into the database with the current timestamp
     count = 0
-    for item in items:
-        (comment, hn_user, hn_id) = parse_from_comment(item)
-
-        # Skip items that don't contain a | character
-        # @todo: This is a temporary fix to avoid adding non-job items to the database, improve me!
-        if '|' not in comment:
+    for item in get_all_comments(soup):
+        # Skip replies
+        if is_reply(item):
             continue
+
+        (comment, hn_user, hn_id) = parse_from_comment(item)
 
         # Check if the job already exists in the database
         cursor.execute(
