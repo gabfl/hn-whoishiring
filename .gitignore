@@ -13,3 +13,6 @@ __pycache__/
 data/*.db
 data/*.bak
 data/*copy*
+
+# Misc
+data/hn.html

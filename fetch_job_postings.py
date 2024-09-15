@@ -1,9 +1,49 @@
 import requests
 from bs4 import BeautifulSoup
 import argparse
-import hashlib
 
 from helper import db_connect, db_init, backup_db_file, is_hacker_news_url, html_to_markdown
+
+
+def load_url(url):
+    """ Load the content of a URL """
+
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+    response = requests.get(url, headers=headers)
+    response.raise_for_status()  # Check if the request was successful
+    return response.text
+
+
+def load_file(file):
+    """ Load the content of a file (for tests) """
+
+    with open(file) as f:
+        return f.read()
+
+
+def parse_from_comment(item):
+    # Get comment from commtext div
+    comment = str(item.find('div', class_='commtext'))
+
+    # Get link with class hnuser
+    user = item.find('a', class_='hnuser')
+    hn_user = None
+    if user:
+        hn_user = user.get_text()
+
+    # Get URL in spam class
+    span = item.find('span', class_='age')
+    hn_id = None
+    if span:
+        # extract URL
+        url = span.find('a')
+        if url:
+            url = url.get('href')
+            # id if after the =
+            hn_id = url.split('=')[-1]
+
+    return (comment, hn_user, hn_id)
 
 
 def main(url):
@@ -24,50 +64,46 @@ def main(url):
     res = db_init()
     print(f'$ {res}')
 
-    # Send a GET request to fetch the page content
-    response = requests.get(url)
-    response.raise_for_status()  # Check if the request was successful
+    # Setup the database connection
+    conn = db_connect()
+    cursor = conn.cursor()
+
+    # Fetch source code of the page
+    source = load_url(url)
+    # source = load_file('data/hn.html')
 
     # Parse the page content using BeautifulSoup
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(source, 'html.parser')
 
     # Find all comments (jobs) in the page
-    comments = soup.find_all('div', class_='commtext')
-
-    # Extract job postings
-    # jobs = [comment.get_text() for comment in comments]
-    jobs = [str(comment) for comment in comments]
-
-    # Connect to the SQLite database
-    conn = db_connect()
-
-    # Create a cursor object to execute SQL queries
-    cursor = conn.cursor()
+    items = soup.find_all('td', class_='default')
 
     # Insert job postings into the database with the current timestamp
     count = 0
-    for job in jobs:
+    for item in items:
+        (comment, hn_user, hn_id) = parse_from_comment(item)
+
         # Skip items that don't contain a | character
         # @todo: This is a temporary fix to avoid adding non-job items to the database, improve me!
-        if '|' not in job:
+        if '|' not in comment:
             continue
-
-        # Convert HTML to Markdown
-        job = html_to_markdown(job)
-
-        # Calculate the hash of the job text
-        job_hash = hashlib.sha256(job.encode()).hexdigest()
 
         # Check if the job already exists in the database
         cursor.execute(
-            'SELECT COUNT(*) FROM jobs WHERE job_hash = ?', (job_hash,))
-        job_exists = cursor.fetchone()[0] > 0
-        if not job_exists:
-            count += 1
-            inserted_at = "datetime('now')"
+            'SELECT id FROM jobs WHERE hn_id = ?', (hn_id,))
+        job_exists = cursor.fetchone()
 
+        if job_exists:
+            # We will update the job text if it has changed
             cursor.execute(
-                'INSERT INTO jobs (job_text, job_hash, inserted_at, status) VALUES (?, ?, ?, ?)', (job, job_hash, inserted_at, 'new'))
+                'UPDATE jobs SET job_text = ? WHERE hn_id = ?', (comment, hn_id))
+        else:
+            count += 1
+
+            cursor.execute("""
+            INSERT INTO jobs (hn_id, hn_user, job_text, inserted_at, status)
+                           VALUES (?, ?, ?, datetime('now'), 'new')
+            """, (hn_id, hn_user, comment))
 
     # Commit the changes and close the connection
     conn.commit()

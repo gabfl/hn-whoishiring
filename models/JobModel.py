@@ -1,14 +1,16 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, validator
+from pydantic import BaseModel
 from typing import Optional
-from helper import db_connect, resolve_email
+from helper import db_connect, resolve_email, html_to_markdown
 from . import StatusModel
 
 
 class Job(BaseModel):
     id: int
+    hn_id: Optional[int]
+    hn_user: Optional[str]
     job_text: str
     inserted_at: datetime
     updated_at: Optional[datetime]
@@ -24,7 +26,7 @@ def get(job_id):
     cursor = conn.cursor()
 
     cursor.execute('''
-    SELECT id, job_text, inserted_at, updated_at, applied_at, status
+    SELECT id, hn_id, hn_user, job_text, inserted_at, updated_at, applied_at, status
     FROM jobs
     WHERE id = ?
     ''', (job_id,))
@@ -83,7 +85,7 @@ def get_all(status=None, search=None):
         query_params.append(f'%{search}%')
 
     query = f"""
-    SELECT id, job_text, inserted_at, updated_at, applied_at, status
+    SELECT id, hn_id, hn_user, job_text, inserted_at, updated_at, applied_at, status
     FROM jobs
     WHERE 1=1
     {query_part}
@@ -115,8 +117,13 @@ def format_job(job):
     # Resolve emails
     job_text = resolve_email(job['job_text'])
 
+    # Convert HTML to Markdown
+    job_text = html_to_markdown(job_text)
+
     return Job(
         id=job['id'],
+        hn_id=job['hn_id'],
+        hn_user=job['hn_user'],
         job_text=job_text,
         inserted_at=job['inserted_at'],
         updated_at=job['updated_at'],

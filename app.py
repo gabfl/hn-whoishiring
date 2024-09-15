@@ -9,7 +9,7 @@ from fastui.forms import SelectSearchResponse
 from pydantic import BaseModel, Field
 import uvicorn
 
-from helper import db_init, get_from_cache, set_to_cache, format_dt
+from helper import db_init, get_from_cache, set_to_cache, format_dt, get_link_user, get_link_comment
 from models import JobModel, StatusModel
 
 app = FastAPI()
@@ -123,9 +123,6 @@ def job_profile(job_id: int) -> list[AnyComponent]:
     except StopIteration:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    # Job_text is markdown, render it as markdown
-    job.job_text = c.Markdown(text=job.job_text)
-
     # Links
     links = []
     for status in StatusModel.get_all():
@@ -142,9 +139,19 @@ def job_profile(job_id: int) -> list[AnyComponent]:
         mode='tabs',
     )
 
+    # Format data
+    job.job_text = c.Markdown(text=job.job_text)
     job.inserted_at = format_dt(job.inserted_at)
     job.updated_at = format_dt(job.updated_at)
     job.applied_at = format_dt(job.applied_at)
+    job.hn_user = c.Link(
+        components=[c.Text(text=job.hn_user)],
+        on_click=GoToEvent(url=get_link_user(job.hn_user), target='_blank'),
+    )
+    job.hn_id = c.Link(
+        components=[c.Text(text=str(job.hn_id))],
+        on_click=GoToEvent(url=get_link_comment(job.hn_id), target='_blank'),
+    )
 
     return [
         c.Page(

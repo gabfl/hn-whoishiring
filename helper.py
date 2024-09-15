@@ -68,8 +68,9 @@ def db_init():
         cursor.execute('''
         CREATE TABLE jobs (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            hn_id INTEGER,
+            hn_user TEXT,
             job_text TEXT NOT NULL,
-            job_hash TEXT NOT NULL,
             inserted_at TIMESTAMP NOT NULL,
             updated_at TIMESTAMP,
             applied_at TIMESTAMP,
@@ -86,9 +87,11 @@ def is_hacker_news_url(url):
 
 
 def html_to_markdown(html):
-    # Convert HTML to Markdown
+    """ Convert HTML to Markdown"""
+
     markdown_converter = html2text.HTML2Text()
     markdown_converter.ignore_links = False  # Keep the links in the markdown
+    markdown_converter.body_width = 0
     markdown_content = markdown_converter.handle(html)
 
     return markdown_content
@@ -143,3 +146,13 @@ def format_dt(date):
         return None
 
     return date.strftime('%m/%d/%Y %I:%M:%S %p')
+
+
+def get_link_user(hn_user):
+    """ Get link to user profile """
+    return f'https://news.ycombinator.com/user?id={hn_user}'
+
+
+def get_link_comment(hn_id):
+    """ Get link to comment """
+    return f'https://news.ycombinator.com/item?id={hn_id}'
