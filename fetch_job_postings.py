@@ -19,11 +19,11 @@ def main(url):
 
     # Backup the database
     res = backup_db_file()
-    print(res)
+    print(f'$ {res}')
 
     # Initialize the database
     res = db_init()
-    print(res)
+    print(f'$ {res}')
 
     # Send a GET request to fetch the page content
     response = requests.get(url)
@@ -74,7 +74,7 @@ def main(url):
     conn.commit()
     conn.close()
 
-    print(f'{count} new jobs added')
+    print(f'$ {count} new jobs added')
 
 
 if __name__ == '__main__':

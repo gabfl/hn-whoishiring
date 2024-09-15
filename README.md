@@ -4,7 +4,7 @@ A FastUI/FastAPI app to manage and interact with Hacker News’s “Who is Hirin
 
 ## Overview
 
-This application allows you to scrape, store, and interactively explore job postings from Hacker News’s “Who is Hiring?” threads. It uses FastAPI for the backend, FastUI for the frontend, and SQLite for data storage.
+This application allows you to scrape, store, and interactively explore job postings from Hacker News’s “Who is Hiring?” threads. It uses [FastAPI](https://fastapi.tiangolo.com) for the backend, [FastUI](https://github.com/pydantic/FastUI) for the frontend, and [SQLite](https://www.sqlite.org) for data storage.
 
 ## Features
 
@@ -20,24 +20,39 @@ This application allows you to scrape, store, and interactively explore job post
 
 ## Usage
 
+### Create a Virtual Environment and Install Dependencies
+
 ```bash
 virtualenv venv
 source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
+```
 
-# Use the fetch_job_postings.py script to scrape and store job postings from the latest “Who is Hiring?” thread. 
-# eplace the URL with the current “Who is Hiring?” thread URL.
+### Fetch Job Listings
+
+Use the `fetch_job_postings.py` script to scrape and store job postings from the latest “Who is Hiring?” thread. Replace the URL with the current “Who is Hiring?” thread URL.
+
+```bash
 python3 fetch_job_postings.py --url https://news.ycombinator.com/item?id=41425910
-# $ Database created
-# $ 283 new jobs added
+```
 
-# Run the FastAPI server with Uvicorn:
+You should see an output like
+```
+$ Database backup created at data/hn_jobs.db_20240914_215948.bak
+$ Database already exists
+$ 283 new jobs added
+```
+
+### Launch the Application
+Run the FastAPI server with Uvicorn:
+
+```bash
 uvicorn app:app
 ```
 
-Then simply visit [http://127.0.0.1:8000](http://127.0.0.1:8000)
+Visit [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser to access the application.
 
 ![Main page](img/main.png)
 ![Job posting](img/posting.png)
