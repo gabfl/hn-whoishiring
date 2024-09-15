@@ -30,8 +30,8 @@ pip install -r requirements.txt
 # Use the fetch_job_postings.py script to scrape and store job postings from the latest “Who is Hiring?” thread. 
 # eplace the URL with the current “Who is Hiring?” thread URL.
 python3 fetch_job_postings.py --url https://news.ycombinator.com/item?id=41425910
-$ Database created
-$ 283 new jobs added
+# $ Database created
+# $ 283 new jobs added
 
 # Run the FastAPI server with Uvicorn:
 uvicorn app:app

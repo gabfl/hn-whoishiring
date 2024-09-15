@@ -1,4 +1,5 @@
-from collections import defaultdict
+from typing import List
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastui import FastUI, AnyComponent, prebuilt_html, components as c
@@ -7,9 +8,9 @@ from fastui.events import GoToEvent, BackEvent, PageEvent
 from fastui.forms import SelectSearchResponse
 from pydantic import BaseModel, Field
 import uvicorn
-from helper import db_init
+
+from helper import db_init, get_from_cache, set_to_cache
 from models import JobModel, StatusModel
-from typing import List
 
 app = FastAPI()
 db_init()
@@ -19,10 +20,11 @@ class FilterForm(BaseModel):
     status: str = Field(json_schema_extra={
         'search_url': '/api/search/status', 'placeholder': 'Filter by Status...'})
 
-# class SearchForm(BaseModel):
-#     # Send this as "search" query parameter to the backend
-#     search: str = Field(json_schema_extra={
-#                         'search_url': '/api/forms/search', 'placeholder': 'Search...', 'minLength': 3})
+
+class SearchForm(BaseModel):
+    # Send this as "search" query parameter to the backend
+    search: str = Field(json_schema_extra={
+                        'placeholder': 'Search...'})
 
 
 @app.get('/api/search/status', response_model=SelectSearchResponse)
@@ -35,16 +37,29 @@ async def status_search_view(request: Request, q: str) -> SelectSearchResponse:
 
 
 @app.get("/api/", response_model=FastUI, response_model_exclude_none=True)
-def users_table(status: str | None = 'new', search: str | None = None) -> List[AnyComponent]:
+def users_table(status: str | None = None, search: str | None = None, clear_cache: str | None = None) -> List[AnyComponent]:
     """
     Show a table of all jobs, the frontend will fetch this
     when a user visits `/` to fetch components to render.
     """
 
+    # # Set filters to/from cache
+    if status or clear_cache:
+        set_to_cache('status', status)
+
+#        if clear_cache:
+    else:
+        status = get_from_cache('status')
+    if search or clear_cache:
+        set_to_cache('search', search)
+    else:
+        search = get_from_cache('search')
+
     # Initial form values
-    filter_form_initial = {}
-    if status:
-        filter_form_initial['status'] = {'value': status, 'label': status}
+    filter_form_initial = {
+        'status': {'value': 'all', 'label': 'All'},
+        'search': search
+    }
 
     # Fetch jobs
     jobs = JobModel.get_all(status=status, search=search)
@@ -52,7 +67,9 @@ def users_table(status: str | None = 'new', search: str | None = None) -> List[A
     return [
         c.Page(  # Page provides a basic container for components
             components=[
-                c.Heading(text='Jobs', level=2),  # renders `<h2>Jobs</h2>`
+                # renders `<h2>Jobs</h2>`
+                c.Heading(text='Jobs listings (%s)' %
+                          (status if status else 'all'), level=2),
                 c.ModelForm(
                     model=FilterForm,
                     submit_url='.',
@@ -61,13 +78,24 @@ def users_table(status: str | None = 'new', search: str | None = None) -> List[A
                     submit_on_change=True,
                     display_mode='inline',
                 ),
-                # c.ModelForm(
-                #     model=SearchForm,
-                #     submit_url='.',
-                #     method='GOTO',
-                #     submit_on_change=True,
-                #     display_mode='inline',
-                # ),
+                c.ModelForm(
+                    model=SearchForm,
+                    submit_url='.',
+                    initial=filter_form_initial,
+                    method='GOTO',
+                    submit_on_change=True,
+                    display_mode='inline',
+                ),
+                c.Div(
+                    components=[
+                        c.Text(
+                            text='%d jobs match the criteria ' % len(jobs)),
+                        c.Link(
+                            components=[c.Text(text='(Clear filters)')],
+                            on_click=GoToEvent(url='?clear_cache=1'),
+                        ),
+                    ]
+                ),
                 c.Table(
                     data=jobs,
                     columns=[
@@ -85,7 +113,7 @@ def users_table(status: str | None = 'new', search: str | None = None) -> List[A
     ]
 
 
-@app.get("/api/job/{job_id}", response_model=FastUI, response_model_exclude_none=True)
+@ app.get("/api/job/{job_id}", response_model=FastUI, response_model_exclude_none=True)
 # @app.get("/job/{job_id}", response_model=FastUI, response_model_exclude_none=True)
 def job_profile(job_id: int) -> list[AnyComponent]:
     """

@@ -14,7 +14,7 @@ def get_all():
         Status(value='applied', label='Applied'),
         Status(value='discarded', label='Discarded'),
         Status(value='interviewed', label='In interview'),
-        Status(value='rejected-ore', label='Rejected (pre-interview)'),
+        Status(value='rejected-pre', label='Rejected (pre-interview)'),
         Status(value='rejected-post', label='Rejected (post-interview)'),
     ]
 

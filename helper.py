@@ -1,7 +1,11 @@
 import os
+from datetime import datetime
 
 import sqlite3
 import html2text
+from cacheout import Cache
+
+cache = Cache(maxsize=1000)
 
 
 def get_db_path():
@@ -10,6 +14,26 @@ def get_db_path():
     """
 
     return 'data/hn_jobs.db'
+
+
+def backup_db_file():
+    """
+        Backup the SQLite database file
+    """
+
+    db_path = get_db_path()
+    backup_path = f'{db_path}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.bak'
+
+    # Check if the database exists
+    db_exists = os.path.exists(db_path)
+
+    if db_exists:
+        # Copy the database file
+        os.system(f'cp {db_path} {backup_path}')
+
+        return "Database backup created at " + backup_path
+
+    return "No database to backup"
 
 
 def db_connect():
@@ -63,3 +87,13 @@ def html_to_markdown(html):
     markdown_content = markdown_converter.handle(html)
 
     return markdown_content
+
+
+def get_from_cache(key):
+    """ Get filters from cache """
+    return cache.get(key)
+
+
+def set_to_cache(key, value):
+    """ Set filters in cache """
+    cache.set(key, value)

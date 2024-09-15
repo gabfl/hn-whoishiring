@@ -75,18 +75,19 @@ def get_all(status=None, search=None):
     cursor = conn.cursor()
 
     query_part = ''
-    query_params = ()
+    query_params = []
     if status:
-        query_part = 'WHERE status = ?'
-        query_params = (status,)
+        query_part += 'AND status = ?'
+        query_params.append(status)
 
     if search:
-        query_part = 'WHERE job_text LIKE ?'
-        query_params = (f'%{search}%',)
+        query_part += 'AND job_text LIKE ?'
+        query_params.append(f'%{search}%')
 
     query = f"""
     SELECT id, job_text, inserted_at, applied_at, status
     FROM jobs
+    WHERE 1=1
     {query_part}
     """
     cursor.execute(query, query_params)
