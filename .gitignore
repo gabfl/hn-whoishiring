@@ -12,3 +12,4 @@ __pycache__/
 # SQLite db
 data/*.db
 data/*.bak
+data/*copy*

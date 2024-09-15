@@ -4,7 +4,7 @@ import argparse
 import hashlib
 from datetime import datetime
 
-from helper import db_connect, db_init, is_hacker_news_url, html_to_markdown
+from helper import db_connect, db_init, backup_db_file, is_hacker_news_url, html_to_markdown
 
 
 def main(url):
@@ -16,6 +16,10 @@ def main(url):
     if not is_hacker_news_url(url):
         print('Invalid Hacker News URL')
         return
+
+    # Backup the database
+    res = backup_db_file()
+    print(res)
 
     # Initialize the database
     res = db_init()

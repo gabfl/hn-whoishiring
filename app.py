@@ -46,8 +46,6 @@ def users_table(status: str | None = None, search: str | None = None, clear_cach
     # # Set filters to/from cache
     if status or clear_cache:
         set_to_cache('status', status)
-
-#        if clear_cache:
     else:
         status = get_from_cache('status')
     if search or clear_cache:
