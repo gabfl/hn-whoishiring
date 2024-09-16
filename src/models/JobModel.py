@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from typing import Optional
-from helper import db_connect, resolve_email, html_to_markdown
+from ..helper import db_connect, resolve_email, html_to_markdown
 from . import StatusModel
 
 

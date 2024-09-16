@@ -9,8 +9,8 @@ from fastui.forms import SelectSearchResponse
 from pydantic import BaseModel, Field
 import uvicorn
 
-from helper import db_init, get_from_cache, set_to_cache, format_dt, get_link_user, get_link_comment
-from models import JobModel, StatusModel
+from .helper import db_init, get_from_cache, set_to_cache, format_dt, get_link_user, get_link_comment
+from .models import JobModel, StatusModel
 
 app = FastAPI()
 db_init()
@@ -110,7 +110,7 @@ def users_table(status: str | None = None, search: str | None = None, clear_cach
     ]
 
 
-@ app.get("/api/job/{job_id}", response_model=FastUI, response_model_exclude_none=True)
+@app.get("/api/job/{job_id}", response_model=FastUI, response_model_exclude_none=True)
 # @app.get("/job/{job_id}", response_model=FastUI, response_model_exclude_none=True)
 def job_profile(job_id: int) -> list[AnyComponent]:
     """
@@ -173,7 +173,7 @@ def job_profile(job_id: int) -> list[AnyComponent]:
     ]
 
 
-@ app.get("/api/job/{job_id}/update/{status}", response_model=FastUI)
+@app.get("/api/job/{job_id}/update/{status}", response_model=FastUI)
 async def update_status(job_id: int, status: str) -> list[AnyComponent]:
     JobModel.update(job_id, status)
 
@@ -182,7 +182,7 @@ async def update_status(job_id: int, status: str) -> list[AnyComponent]:
     return [c.FireEvent(event=GoToEvent(url=f'/job/{job_id}'))]
 
 
-@ app.get('/{path:path}')
+@app.get('/{path:path}')
 async def html_landing() -> HTMLResponse:
     """Simple HTML page which serves the React app, comes last as it matches all paths."""
     return HTMLResponse(prebuilt_html(title='Who Is Hiring?'))

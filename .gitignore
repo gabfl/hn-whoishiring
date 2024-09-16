@@ -8,11 +8,9 @@ venv/
 *.pyo
 *.pyd
 __pycache__/
+.coverage
 
 # SQLite db
-data/*.db
-data/*.bak
-data/*copy*
-
-# Misc
-data/hn.html
+src/data/*.db
+src/data/*.bak
+src/data/*copy*
