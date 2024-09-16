@@ -1,0 +1,7 @@
+[report]
+omit =
+  src/test/*
+  venv/*
+exclude_lines =
+  if __name__ == '__main__':
+  main()

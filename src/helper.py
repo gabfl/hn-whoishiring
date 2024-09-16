@@ -14,7 +14,10 @@ def get_db_path():
         Get the path to the SQLite database
     """
 
-    return 'data/hn_jobs.db'
+    # Get current dir path
+    current_dir = os.path.dirname(os.path.realpath(__file__))
+
+    return current_dir + '/data/hn_jobs.db'
 
 
 def backup_db_file():

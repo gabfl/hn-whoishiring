@@ -2,7 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 import argparse
 
-from helper import db_connect, db_init, backup_db_file, is_hacker_news_url, html_to_markdown
+from .helper import db_connect, db_init, backup_db_file, is_hacker_news_url
 
 
 def load_url(url):
@@ -41,6 +41,8 @@ def is_reply(item):
 
     if res:
         return True
+
+    return False
 
 
 def parse_from_comment(item):
