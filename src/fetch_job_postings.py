@@ -101,7 +101,7 @@ def main(url):
     soup = BeautifulSoup(source, 'html.parser')
 
     # Insert job postings into the database with the current timestamp
-    count = 0
+    new_count = exist_count = 0
     for item in get_all_comments(soup):
         # Skip replies
         if is_reply(item):
@@ -115,11 +115,13 @@ def main(url):
         job_exists = cursor.fetchone()
 
         if job_exists:
+            exist_count += 1
+
             # We will update the job text if it has changed
             cursor.execute(
                 'UPDATE jobs SET job_text = ? WHERE hn_id = ?', (comment, hn_id))
         else:
-            count += 1
+            new_count += 1
 
             cursor.execute("""
             INSERT INTO jobs (hn_id, hn_user, job_text, inserted_at, status)
@@ -130,7 +132,8 @@ def main(url):
     conn.commit()
     conn.close()
 
-    print(f'$ {count} new jobs added')
+    print(f'$ {exist_count} existing jobs')
+    print(f'$ {new_count} new jobs added')
 
 
 if __name__ == '__main__':
