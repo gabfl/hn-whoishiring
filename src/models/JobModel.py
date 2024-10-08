@@ -113,7 +113,7 @@ def get_all(status=None, search=None):
 
 def get_by_user(hn_user):
     """
-        Get jobs by user
+        Get jobs by HN user
     """
     conn = db_connect()
     cursor = conn.cursor()
@@ -147,7 +147,7 @@ def get_by_user(hn_user):
 
 def get_to_discard():
     """
-        Get jobs that can be discarded because the user is matched with another job
+        Get jobs that can be discarded because the user is matched with another job.
     """
     conn = db_connect()
     cursor = conn.cursor()

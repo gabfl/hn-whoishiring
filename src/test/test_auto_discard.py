@@ -68,6 +68,14 @@ class Test(unittest.TestCase):
         conn.close()
 
     @patch.object(helper, "get_db_path")
+    def test_get_count(self, mock_get_db_path):
+        # Mock get_db_path
+        mock_get_db_path.return_value = self.tmp_db_path
+
+        res = auto_discard.get_count()
+        self.assertEqual(res, 1)
+
+    @patch.object(helper, "get_db_path")
     def test_auto_discard(self, mock_get_db_path):
         # Mock get_db_path
         mock_get_db_path.return_value = self.tmp_db_path
