@@ -194,6 +194,10 @@ def user_jobs_profile(hn_user: str) -> list[AnyComponent]:
             components=[
                 # renders `<h2>Jobs</h2>`
                 c.Heading(text='Jobs listings by %s' % (hn_user), level=2),
+                c.Link(
+                    components=[c.Text(text='Back to listings')],
+                    on_click=GoToEvent(url='/')
+                ),
                 c.Div(
                     components=[
                         c.Text(
