@@ -151,11 +151,11 @@ def format_dt(date):
     return date.strftime('%m/%d/%Y %I:%M:%S %p')
 
 
-def get_link_user(hn_user):
+def get_hn_link_user(hn_user):
     """ Get link to user profile """
     return f'https://news.ycombinator.com/user?id={hn_user}'
 
 
-def get_link_comment(hn_id):
+def get_hn_link_comment(hn_id):
     """ Get link to comment """
     return f'https://news.ycombinator.com/item?id={hn_id}'

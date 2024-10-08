@@ -44,14 +44,14 @@ class Test(unittest.TestCase):
         jobs = [
             {
                 'hn_id': 123,
-                'hn_user': 'test',
+                'hn_user': 'test_user',
                 'job_text': 'test',
                 'inserted_at': '2024-09-16T11:40:43',
                 'status': 'new'
             },
             {
                 'hn_id': 124,
-                'hn_user': 'other test',
+                'hn_user': 'test_user',
                 'job_text': 'other test',
                 'inserted_at': '2024-09-16T11:40:43',
                 'apply_at': '2024-09-16T11:40:43',
@@ -77,7 +77,7 @@ class Test(unittest.TestCase):
 
         self.assertEqual(job.id, 1)
         self.assertEqual(job.hn_id, 123)
-        self.assertEqual(job.hn_user, 'test')
+        self.assertEqual(job.hn_user, 'test_user')
         self.assertEqual(job.job_text, 'test\n')
         self.assertEqual(job.status, 'new')
 
@@ -121,6 +121,28 @@ class Test(unittest.TestCase):
         jobs = JobModel.get_all(search='nothing')
         self.assertEqual(len(jobs), 1)
         self.assertEqual(jobs[0].job_text, 'No results.\n')
+
+    @patch.object(helper, "get_db_path")
+    def test_get_by_user(self, mock_get_db_path):
+        # Mock get_db_path
+        mock_get_db_path.return_value = self.tmp_db_path
+
+        jobs = JobModel.get_by_user('unknown_user')
+        self.assertEqual(len(jobs), 1)
+        self.assertEqual(jobs[0].job_text, 'No results.\n')
+
+        jobs = JobModel.get_by_user('test_user')
+        self.assertEqual(len(jobs), 2)
+
+    @patch.object(helper, "get_db_path")
+    def test_get_to_discard(self, mock_get_db_path):
+        # Mock get_db_path
+        mock_get_db_path.return_value = self.tmp_db_path
+
+        jobs_ids = JobModel.get_to_discard()
+        self.assertEqual(len(jobs_ids), 1)
+        for job_id in jobs_ids:
+            self.assertIsInstance(job_id, int)
 
     def test_format_job(self):
         job = {

@@ -110,10 +110,10 @@ class Test(unittest.TestCase):
         res = helper.format_dt(None)
         self.assertIsNone(res)
 
-    def test_get_link_user(self):
-        res = helper.get_link_user('test')
+    def test_get_hn_link_user(self):
+        res = helper.get_hn_link_user('test')
         self.assertEqual(res, 'https://news.ycombinator.com/user?id=test')
 
-    def test_get_link_comment(self):
-        res = helper.get_link_comment('test')
+    def test_get_hn_link_comment(self):
+        res = helper.get_hn_link_comment('test')
         self.assertEqual(res, 'https://news.ycombinator.com/item?id=test')

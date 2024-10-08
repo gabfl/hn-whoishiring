@@ -9,7 +9,7 @@ from fastui.forms import SelectSearchResponse
 from pydantic import BaseModel, Field
 import uvicorn
 
-from .helper import db_init, get_from_cache, set_to_cache, format_dt, get_link_user, get_link_comment
+from .helper import db_init, get_from_cache, set_to_cache, format_dt, get_hn_link_user, get_hn_link_comment
 from .models import JobModel, StatusModel
 
 app = FastAPI()
@@ -111,7 +111,6 @@ def users_table(status: str | None = None, search: str | None = None, clear_cach
 
 
 @app.get("/api/job/{job_id}", response_model=FastUI, response_model_exclude_none=True)
-# @app.get("/job/{job_id}", response_model=FastUI, response_model_exclude_none=True)
 def job_profile(job_id: int) -> list[AnyComponent]:
     """
     Job detail page, the frontend will fetch this
@@ -149,13 +148,12 @@ def job_profile(job_id: int) -> list[AnyComponent]:
     if job.hn_user:
         job.hn_user = c.Link(
             components=[c.Text(text=job.hn_user)],
-            on_click=GoToEvent(url=get_link_user(
-                job.hn_user), target='_blank'),
+            on_click=GoToEvent(url='/user/%s' % job.hn_user),
         )
     if job.hn_id:
         job.hn_id = c.Link(
             components=[c.Text(text=str(job.hn_id))],
-            on_click=GoToEvent(url=get_link_comment(
+            on_click=GoToEvent(url=get_hn_link_comment(
                 job.hn_id), target='_blank'),
         )
 
@@ -180,6 +178,42 @@ async def update_status(job_id: int, status: str) -> list[AnyComponent]:
     # Redirect
     # return RedirectResponse(url=f'/job/{job_id}')
     return [c.FireEvent(event=GoToEvent(url=f'/job/{job_id}'))]
+
+
+@app.get("/api/user/{hn_user}", response_model=FastUI, response_model_exclude_none=True)
+def user_jobs_profile(hn_user: str) -> list[AnyComponent]:
+    """
+    Show a table of all jobs from a specific user.
+    """
+
+    # Fetch jobs
+    jobs = JobModel.get_by_user(hn_user=hn_user)
+
+    return [
+        c.Page(  # Page provides a basic container for components
+            components=[
+                # renders `<h2>Jobs</h2>`
+                c.Heading(text='Jobs listings by %s' % (hn_user), level=2),
+                c.Div(
+                    components=[
+                        c.Text(
+                            text='%d jobs match the criteria ' % len(jobs)),
+                    ]
+                ),
+                c.Table(
+                    data=jobs,
+                    columns=[
+                        DisplayLookup(
+                            field='id', on_click=GoToEvent(url='/job/{id}')),
+                        DisplayLookup(field='job_text',
+                                      mode=DisplayMode.markdown),
+                        DisplayLookup(field='status'),
+                        DisplayLookup(field='inserted_at'),
+                    ],
+                ),
+            ]
+        ),
+    ]
 
 
 @app.get('/{path:path}')
