@@ -1,16 +1,18 @@
 # Mac OS hidden files
 .DS_Store
 
-venv/
-
 # Python
 *.pyc
 *.pyo
 *.pyd
 __pycache__/
 .coverage
+venv/
 
 # SQLite db
 src/data/*.db
 src/data/*.bak
 src/data/*copy*
+
+# Local
+.env

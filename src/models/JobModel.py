@@ -26,8 +26,8 @@ def get(job_id):
     cursor = conn.cursor()
 
     cursor.execute('''
-    SELECT id, hn_id, hn_user, job_text, inserted_at, updated_at, applied_at, status
-    FROM jobs
+    SELECT j.id, j.hn_id, j.hn_user, j.job_text, j.inserted_at, j.updated_at, j.applied_at, j.status
+    FROM jobs j
     WHERE id = ?
     ''', (job_id,))
 
@@ -109,6 +109,68 @@ def get_all(status=None, search=None):
         jobs.append(format_job(dict(row)))
 
     return jobs
+
+
+def get_by_user(hn_user):
+    """
+        Get jobs by HN user
+    """
+    conn = db_connect()
+    cursor = conn.cursor()
+
+    query = '''
+    SELECT j.id, j.hn_id, j.hn_user, j.job_text, j.inserted_at, j.updated_at, j.applied_at, j.status
+    FROM jobs j
+    WHERE hn_user = ?
+    '''
+
+    cursor.execute(query, [hn_user])
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    if not rows:
+        # @todo: better handling of no jobs found
+        return [
+            format_job({
+                'id': 0,
+                'job_text': 'No results.',
+            })
+        ]
+
+    jobs = []
+    for row in rows:
+        jobs.append(format_job(dict(row)))
+
+    return jobs
+
+
+def get_to_discard():
+    """
+        Get jobs that can be discarded because the user is matched with another job.
+    """
+    conn = db_connect()
+    cursor = conn.cursor()
+
+    query = '''
+    SELECT j.id
+    FROM jobs j
+    WHERE status = 'new'
+        AND EXISTS (
+            SELECT 1
+            FROM jobs
+            WHERE hn_user = j.hn_user
+                AND id != j.id
+                AND status IN ('applied', 'discarded', 'interviewed', 'rejected-pre', 'rejected-post')
+            );
+    '''
+
+    cursor.execute(query)
+
+    rows = cursor.fetchall()
+    conn.close()
+
+    return [row['id'] for row in rows]
 
 
 def format_job(job):
